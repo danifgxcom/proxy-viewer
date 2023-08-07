@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import html2pdf from 'html2pdf.js';
 
 const VisorHTML = () => {
   const [url, setUrl] = useState('');
@@ -18,12 +17,25 @@ const VisorHTML = () => {
     }
   };
 
-  const handleDescargarPDF = () => {
-    const element = document.getElementById('html-content');
-
-    html2pdf()
-      .from(element)
-      .save('archivo.pdf');
+  const handleDescargarPDF = async () => {
+    try {
+      // Realizar la solicitud al servidor para generar y descargar el PDF
+      await axios.get('/descargar-pdf', {
+        params: { url },
+        responseType: 'blob', // Indicar que se espera una respuesta tipo blob (archivo)
+      }).then(response => {
+        // Crear un enlace temporal para descargar el PDF
+        const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'archivo.pdf';
+        a.click();
+        // Liberar el enlace temporal
+        window.URL.revokeObjectURL(url);
+      });
+    } catch (error) {
+      console.error('Error al descargar el PDF:', error);
+    }
   };
 
   return (
@@ -36,7 +48,7 @@ const VisorHTML = () => {
       />
       <button onClick={handleMostrarPagina}>Mostrar Página</button>
       <button onClick={handleDescargarPDF}>Descargar PDF</button>
-      <div id="html-content" dangerouslySetInnerHTML={{ __html: html }} />
+      <div dangerouslySetInnerHTML={{ __html: html }} />
     </div>
   );
 };
